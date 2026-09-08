@@ -5,7 +5,7 @@
 - CI: GitHub-hosted Ubuntu에서 Java 17, Gradle 테스트, `bootJar` 생성
 - CD: 운영 Ubuntu의 `sgadmin` self-hosted runner에서 수동 승인 배포
 - 배포 대상: `/opt/sgcomplaint/app/sgcomplaint.jar`
-- DB 변경: root 소유 `db-migrate.sh`가 Flyway info/validate/migrate/validate/info 실행
+- DB 변경: root 소유 `db-migrate.sh`가 Flyway info/migrate/validate/info 실행
 - 검증: `http://127.0.0.1:9081/actuator/health`가 `UP`인지 확인
 - 실패: 이전 JAR 복원. 이미 실행된 DB 마이그레이션은 자동 복원하지 않음
 

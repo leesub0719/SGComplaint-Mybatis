@@ -36,6 +36,8 @@ class CicdConfigurationTests {
         assertTrue(script.contains("/opt/sgcomplaint/incoming/sgcomplaint.jar"));
         assertTrue(script.contains("bash \"$migration_script\" migrate"));
         assertTrue(script.contains("bash \"$migration_script\" validate"));
+        assertTrue(script.indexOf("bash \"$migration_script\" migrate")
+                < script.indexOf("bash \"$migration_script\" validate"));
         assertTrue(script.contains("127.0.0.1:9081/actuator/health"));
         assertTrue(script.contains("rollback_jar"));
         assertFalse(script.contains("eval "));

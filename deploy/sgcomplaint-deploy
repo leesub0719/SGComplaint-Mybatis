@@ -79,7 +79,6 @@ systemctl stop sgcomplaint
 install -o root -g sgcomplaint -m 0640 "$incoming_jar" "$app_jar"
 
 if ! bash "$migration_script" info \
-  || ! bash "$migration_script" validate \
   || ! bash "$migration_script" migrate \
   || ! bash "$migration_script" validate \
   || ! bash "$migration_script" info; then
