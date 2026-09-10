@@ -6,6 +6,7 @@ import com.transit.SGComplaint.DTO.SignupAgreementRequest;
 import com.transit.SGComplaint.service.DuplicateEmployeeIdException;
 import com.transit.SGComplaint.service.EmployeeService;
 import com.transit.SGComplaint.service.PhoneVerificationException;
+import com.transit.SGComplaint.service.SignupAgreementSession;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -18,24 +19,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Map;
 
 @Controller
 public class MemberController {
 
-    private static final String SIGNUP_AGREEMENT_SESSION =
-            "signupAgreementEvidence";
-    private static final String TERMS_VERSION = "2026-09-04";
-    private static final String PRIVACY_VERSION = "2026-09-07";
-    private static final Duration AGREEMENT_VALID_DURATION =
-            Duration.ofMinutes(30);
-
     private final EmployeeService employeeService;
+    private final SignupAgreementSession agreementSession;
 
-    public MemberController(EmployeeService employeeService) {
+    public MemberController(
+            EmployeeService employeeService,
+            SignupAgreementSession agreementSession) {
         this.employeeService = employeeService;
+        this.agreementSession = agreementSession;
     }
 
     @GetMapping("/signup")
@@ -54,8 +50,8 @@ public class MemberController {
         if (!model.containsAttribute("agreementForm")) {
             model.addAttribute("agreementForm", new SignupAgreementRequest());
         }
-        model.addAttribute("termsVersion", TERMS_VERSION);
-        model.addAttribute("privacyVersion", PRIVACY_VERSION);
+        model.addAttribute("termsVersion", SignupAgreementSession.TERMS_VERSION);
+        model.addAttribute("privacyVersion", SignupAgreementSession.PRIVACY_VERSION);
         return "member/signup-terms";
     }
 
@@ -66,17 +62,12 @@ public class MemberController {
             HttpSession session,
             Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("termsVersion", TERMS_VERSION);
-            model.addAttribute("privacyVersion", PRIVACY_VERSION);
+            model.addAttribute("termsVersion", SignupAgreementSession.TERMS_VERSION);
+            model.addAttribute("privacyVersion", SignupAgreementSession.PRIVACY_VERSION);
             return "member/signup-terms";
         }
 
-        session.setAttribute(
-                SIGNUP_AGREEMENT_SESSION,
-                new SignupAgreementEvidence(
-                        TERMS_VERSION,
-                        PRIVACY_VERSION,
-                        LocalDateTime.now()));
+        agreementSession.markAgreed(session);
         return "redirect:/signup";
     }
 
@@ -106,7 +97,7 @@ public class MemberController {
 
         try {
             Long empNo = employeeService.signupUser(request, agreement);
-            session.removeAttribute(SIGNUP_AGREEMENT_SESSION);
+            agreementSession.clear(session);
             redirectAttributes.addFlashAttribute("empNo", empNo);
             return "redirect:/signup/complete";
         } catch (DuplicateEmployeeIdException exception) {
@@ -151,20 +142,6 @@ public class MemberController {
     }
 
     private SignupAgreementEvidence getValidAgreement(HttpSession session) {
-        Object value = session.getAttribute(SIGNUP_AGREEMENT_SESSION);
-        if (!(value instanceof SignupAgreementEvidence evidence)) {
-            return null;
-        }
-
-        boolean correctVersion = TERMS_VERSION.equals(evidence.termsVersion())
-                && PRIVACY_VERSION.equals(evidence.privacyVersion());
-        boolean expired = evidence.agreedAt() == null
-                || evidence.agreedAt().plus(AGREEMENT_VALID_DURATION)
-                        .isBefore(LocalDateTime.now());
-        if (!correctVersion || expired) {
-            session.removeAttribute(SIGNUP_AGREEMENT_SESSION);
-            return null;
-        }
-        return evidence;
+        return agreementSession.getValidAgreement(session);
     }
 }

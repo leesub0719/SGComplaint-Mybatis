@@ -1,64 +1,205 @@
-import { useCallback, useEffect, useState } from 'react';
-import { apiGet } from './api.js';
-import PasswordConfirm from './components/PasswordConfirm.jsx';
-import ProfileForm from './components/ProfileForm.jsx';
+import { useState } from 'react';
+import { postFormData, ApiError } from './api.js';
+import { CATEGORIES, CATEGORY_CODES, categoryFromQuery } from './lib/categories.js';
+import { validateFiles } from './lib/files.js';
+import RichTextEditor from './editor/RichTextEditor.jsx';
+import AttachmentPicker from './components/AttachmentPicker.jsx';
+import CompleteModal from './components/CompleteModal.jsx';
+
+const TITLE_MAX = 100;
+const CONTENT_MAX = 2000;
 
 /**
- * 마이페이지 정보수정 SPA.
+ * 민원 작성 화면.
+ * 기존 templates/complaint/create.html + static/js/complaint.js(272줄) 대체.
  *
- * 서버는 /api/mypage/profile 로 "비밀번호 재확인 통과 여부(verified)"를 알려주고,
- * 통과 전에는 개인정보를 내려보내지 않는다. 화면 전환은 그 플래그 하나로 결정된다.
+ * 서버의 POST /complaints는 이미 JSON을 반환하는 API라(@ResponseBody +
+ * ComplaintCreateResponse) 백엔드 변경 없이 그대로 호출한다.
  */
 export default function App() {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [category, setCategory] = useState(categoryFromQuery());
+  const [title, setTitle] = useState('');
+  const [postPassword, setPostPassword] = useState('');
+  const [content, setContent] = useState({ html: '', length: 0 });
+  const [files, setFiles] = useState([]);
+  const [fileMessage, setFileMessage] = useState('');
+  const [errors, setErrors] = useState({});
+  const [formMessage, setFormMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [complaintNo, setComplaintNo] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setProfile(await apiGet('/api/mypage/profile'));
-    } catch (exception) {
-      setError(exception.message);
-    } finally {
-      setLoading(false);
+  const meta = CATEGORIES[category];
+  const contentValid = content.length > 0 && content.length <= CONTENT_MAX;
+
+  function validate() {
+    const next = {};
+    if (!CATEGORY_CODES.includes(category)) next.category = '민원 분류를 선택해 주세요.';
+    if (!title.trim()) next.title = '제목을 입력해 주세요.';
+    if (postPassword.length < 4 || postPassword.length > 20) {
+      next.postPassword = '게시글 비밀번호는 4~20자로 입력해 주세요.';
     }
-  }, []);
+    if (!contentValid) {
+      next.content = content.length === 0
+        ? '내용을 입력해 주세요.'
+        : `내용은 ${CONTENT_MAX}자 이내로 입력해 주세요.`;
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
 
-  useEffect(() => { load(); }, [load]);
+  async function submit(event) {
+    event.preventDefault();
+    setFormMessage('');
+
+    if (!validate()) {
+      setFormMessage('필수 입력 항목을 확인해 주세요.');
+      return;
+    }
+    const fileError = validateFiles(files);
+    if (fileError) {
+      setFileMessage(fileError);
+      setFormMessage('첨부파일을 다시 확인해 주세요.');
+      return;
+    }
+
+    // 서버는 @ModelAttribute + MultipartFile 이므로 multipart/form-data로 보낸다.
+    const formData = new FormData();
+    formData.append('category', category);
+    formData.append('title', title);
+    formData.append('content', content.html);
+    formData.append('postPassword', postPassword);
+    files.forEach((file) => formData.append('attachments', file));
+
+    setSubmitting(true);
+    try {
+      const result = await postFormData('/complaints', formData);
+      setComplaintNo(result.complaintNo);
+    } catch (exception) {
+      setFormMessage(exception.message);
+      if (exception instanceof ApiError && exception.status === 401) {
+        window.setTimeout(() => { window.location.href = '/login'; }, 1500);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <>
       <header className="site-header">
         <a className="brand" href="/"><span>013</span> (주) 서경 마을버스</a>
-        <nav>
-          <a href="/mypage/inquiries">나의 문의내역</a>
-          <a href="/logout">로그아웃</a>
-        </nav>
+        <a href="/complaints">민원 목록</a>
       </header>
 
-      <section className="hero">
-        <p>MY PAGE</p>
-        <h1>마이페이지</h1>
+      <section
+        className="hero"
+        style={{ backgroundImage: `linear-gradient(110deg, rgba(3,81,66,.94), rgba(10,125,102,.72)), url('${meta.heroImage}')` }}
+      >
+        <p>CUSTOMER VOICE</p>
+        <h1>{meta.title}</h1>
+        <span>{meta.description}</span>
       </section>
 
-      <main className="shell">
-        <aside className="side-menu">
-          <strong>마이페이지</strong>
-          <a className="active" href="/react-mypage">정보수정</a>
-          <a href="/mypage/inquiries">나의 문의내역</a>
-        </aside>
+      <main className="page">
+        <section className="form-card">
+          <div className="form-card-header">
+            <div>
+              <span className="step">STEP 01</span>
+              <h2>민원 내용 작성</h2>
+            </div>
+            <p><em>*</em> 표시는 필수 입력 항목입니다.</p>
+          </div>
 
-        {loading && <p className="message">회원정보를 불러오는 중입니다.</p>}
-        {!loading && error && <p className="message error">{error}</p>}
+          <form onSubmit={submit} noValidate>
+            <div className="row">
+              <div className="form-field">
+                <label htmlFor="complaint-category">분류 <em>*</em></label>
+                <select
+                  id="complaint-category"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                >
+                  {CATEGORY_CODES.map((code) => (
+                    <option key={code} value={code}>{CATEGORIES[code].label}</option>
+                  ))}
+                </select>
+                <p className="field-help">접수하려는 내용과 가장 가까운 분류를 선택해 주세요.</p>
+                {errors.category && <p className="field-message error">{errors.category}</p>}
+              </div>
 
-        {!loading && !error && profile && (
-          profile.verified
-            ? <ProfileForm profile={profile} onExpired={load} />
-            : <PasswordConfirm empId={profile.empId} onVerified={load} />
-        )}
+              <div className="form-field">
+                <label htmlFor="post-password">게시글 비밀번호 <em>*</em></label>
+                <input
+                  id="post-password"
+                  type="password"
+                  minLength={4}
+                  maxLength={20}
+                  autoComplete="new-password"
+                  placeholder="4~20자로 입력해 주세요"
+                  value={postPassword}
+                  onChange={(event) => setPostPassword(event.target.value)}
+                />
+                <p className="field-help">게시글을 열람할 때 사용하는 비밀번호입니다.</p>
+                {errors.postPassword && <p className="field-message error">{errors.postPassword}</p>}
+              </div>
+            </div>
+
+            <div className="form-field">
+              <div className="label-row">
+                <label htmlFor="complaint-title">제목 <em>*</em></label>
+                <span><strong>{title.length}</strong>/{TITLE_MAX}</span>
+              </div>
+              <input
+                id="complaint-title"
+                type="text"
+                maxLength={TITLE_MAX}
+                placeholder={meta.titlePlaceholder}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+              />
+              {errors.title && <p className="field-message error">{errors.title}</p>}
+            </div>
+
+            <div className="form-field">
+              <div className="label-row">
+                <label>내용 <em>*</em></label>
+                <span
+                  className={content.length > CONTENT_MAX ? 'over-limit' : ''}
+                >
+                  <strong>{content.length}</strong>/{CONTENT_MAX}
+                </span>
+              </div>
+              <RichTextEditor
+                invalid={Boolean(errors.content)}
+                onChange={(html, length) => {
+                  setContent({ html, length });
+                  setErrors((previous) => ({ ...previous, content: undefined }));
+                }}
+              />
+              <p className="field-help">개인정보나 주민등록번호 등 민감한 정보는 작성하지 마세요.</p>
+              {errors.content && <p className="field-message error">{errors.content}</p>}
+            </div>
+
+            <AttachmentPicker
+              files={files}
+              onChange={setFiles}
+              message={fileMessage}
+              onMessage={setFileMessage}
+            />
+
+            {formMessage && <p className="form-message" aria-live="polite">{formMessage}</p>}
+
+            <div className="form-actions">
+              <a className="button button-cancel" href="/">취소</a>
+              <button className="button button-submit" type="submit" disabled={submitting}>
+                {submitting ? '접수 중...' : '접수하기'}
+              </button>
+            </div>
+          </form>
+        </section>
       </main>
+
+      {complaintNo != null && <CompleteModal complaintNo={complaintNo} />}
     </>
   );
 }

@@ -9,7 +9,11 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class RichTextSanitizer {
@@ -18,11 +22,20 @@ public class RichTextSanitizer {
             HTML.Tag.P, HTML.Tag.DIV, HTML.Tag.BR,
             HTML.Tag.B, HTML.Tag.STRONG, HTML.Tag.I, HTML.Tag.EM, HTML.Tag.U,
             HTML.Tag.UL, HTML.Tag.OL, HTML.Tag.LI, HTML.Tag.BLOCKQUOTE,
-            HTML.Tag.FONT, HTML.Tag.IMG
+            HTML.Tag.FONT, HTML.Tag.IMG, HTML.Tag.SPAN
     );
     private static final Set<String> ALLOWED_FONTS = Set.of(
             "Arial", "Georgia", "Tahoma", "Verdana", "맑은 고딕", "Malgun Gothic"
     );
+
+    // React(Tiptap) 에디터는 <font face size> 대신 표준 CSS를 쓴다.
+    // style 속성 전체를 통과시키면 위험하므로, 아래 두 속성만 값까지 검사해 복원한다.
+    private static final Pattern FONT_FAMILY_STYLE =
+            Pattern.compile("font-family\\s*:\\s*([^;]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FONT_SIZE_STYLE =
+            Pattern.compile("font-size\\s*:\\s*(\\d{1,3})px", Pattern.CASE_INSENSITIVE);
+    private static final int MIN_FONT_PX = 10;
+    private static final int MAX_FONT_PX = 32;
 
     public String sanitize(String html) {
         if (html == null) return "";
@@ -40,6 +53,7 @@ public class RichTextSanitizer {
                 if (suppressedDepth > 0 || !ALLOWED_TAGS.contains(tag)) return;
                 result.append('<').append(tag);
                 appendSafeFontAttributes(result, tag, attributes);
+                if (tag == HTML.Tag.SPAN) appendSafeSpanAttributes(result, attributes);
                 if (tag == HTML.Tag.IMG) appendSafeImageAttributes(result, attributes);
                 result.append('>');
             }
@@ -129,6 +143,44 @@ public class RichTextSanitizer {
         String size = sizeAttribute == null ? "" : sizeAttribute.toString();
         if (size.matches("[1-7]")) {
             result.append(" size=\"").append(size).append('"');
+        }
+    }
+
+    /**
+     * Tiptap이 만드는 &lt;span style="font-family: ...; font-size: 16px"&gt;에서
+     * 허용된 글꼴과 크기만 골라 다시 붙인다. 그 외 CSS 선언은 모두 버린다.
+     */
+    private static void appendSafeSpanAttributes(
+            StringBuilder result,
+            MutableAttributeSet attributes) {
+        Object styleAttribute = attributes.getAttribute(HTML.Attribute.STYLE);
+        if (styleAttribute == null) return;
+
+        String style = styleAttribute.toString();
+        List<String> safeDeclarations = new ArrayList<>();
+
+        Matcher family = FONT_FAMILY_STYLE.matcher(style);
+        if (family.find()) {
+            String face = family.group(1).trim()
+                    .replace("\"", "")
+                    .replace("'", "");
+            if (ALLOWED_FONTS.contains(face)) {
+                safeDeclarations.add("font-family: " + face);
+            }
+        }
+
+        Matcher size = FONT_SIZE_STYLE.matcher(style);
+        if (size.find()) {
+            int pixels = Integer.parseInt(size.group(1));
+            if (pixels >= MIN_FONT_PX && pixels <= MAX_FONT_PX) {
+                safeDeclarations.add("font-size: " + pixels + "px");
+            }
+        }
+
+        if (!safeDeclarations.isEmpty()) {
+            result.append(" style=\"")
+                    .append(HtmlUtils.htmlEscape(String.join("; ", safeDeclarations)))
+                    .append('"');
         }
     }
 
