@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,
                     "/complaints",
                     "/complaints/view/**",
+                    "/api/public/complaints",
                     "/notices/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/complaints/*/verify").permitAll()
@@ -43,6 +44,7 @@ public class SecurityConfig {
                     "/api/account-recovery/**",
                     "/css/**",
                     "/js/**",
+                    "/react-complaints/**",
                     "/images/**",
                     "/main-banners/**",
                     "/company/**",

@@ -7,6 +7,7 @@ public record PublicComplaintItem(
         String statusCode,
         String statusLabel,
         String title,
+        boolean passwordProtected,
         String maskedWriterName,
         String registeredDate) {
 }

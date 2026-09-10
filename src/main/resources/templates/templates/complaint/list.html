@@ -73,7 +73,7 @@
                     <td class="title-cell">
                         <button type="button" data-password-open
                                 th:attr="data-complaint-no=${item.complaintNo},data-complaint-title=${item.title}">
-                            <span class="lock-icon" aria-hidden="true">▣</span>
+                            <span class="lock-icon" th:if="${item.passwordProtected}" aria-hidden="true">🔒</span>
                             <span th:text="${item.title}">민원 제목</span>
                         </button>
                     </td>

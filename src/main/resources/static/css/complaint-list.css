@@ -51,7 +51,7 @@ button,input { font:inherit; }
 .title-cell button { width:100%; display:flex; align-items:center; gap:9px; padding:8px 0; overflow:hidden; color:#26312d; background:transparent; border:0; text-align:left; cursor:pointer; }
 .title-cell button:hover span:last-child { color:var(--green); text-decoration:underline; }
 .title-cell button span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.lock-icon { flex:none; color:#80908a; font-size:11px; }
+.lock-icon { flex:none; color:#6f7f79; font-size:14px; line-height:1; }
 .category-label { display:inline-flex; align-items:center; justify-content:center; min-width:88px; padding:6px 10px; border-radius:14px; font-size:11px; font-weight:800; }
 .category-praise { color:#7b5c11; background:#fff4cf; }
 .category-complaint,.category-driver,.category-bus { color:#98433e; background:#ffeded; }

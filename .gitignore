@@ -53,3 +53,8 @@ performance/results/*
 
 ### Temporary diagnostic files ###
 complaints-response.html
+
+### React / Node ###
+node_modules/
+.pnpm-store/
+npm-debug.log*

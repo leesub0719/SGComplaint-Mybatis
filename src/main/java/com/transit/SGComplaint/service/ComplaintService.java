@@ -141,6 +141,7 @@ public class ComplaintService {
                         complaint.getStatus().name(),
                         complaint.getStatus().getLabel(),
                         complaint.getTitle(),
+                        StringUtils.hasText(complaint.getPassword()),
                         maskName(complaint.getEmpName()),
                         complaint.getCreatedAt().format(DATE_FORMATTER)
                 ));
