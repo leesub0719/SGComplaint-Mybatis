@@ -44,7 +44,14 @@ public class SecurityConfig {
                     "/api/account-recovery/**",
                     "/api/signup/**",
                     "/api/csrf",
+                    // 헤더는 비로그인 상태에서도 그려야 하므로 공개한다.
+                    // 로그인하지 않았으면 loggedIn:false 만 응답한다.
+                    "/api/layout/me",
                     "/react-account/**",
+                    // 통합 SPA의 셸(index.html·JS·CSS)은 공개한다.
+                    // 화면 안의 데이터는 전부 /api/** 를 거치고, 그쪽에서 권한을
+                    // 검사하므로 셸만으로는 아무 정보도 노출되지 않는다.
+                    "/app/**",
                     "/css/**",
                     "/js/**",
                     "/react-complaints/**",
@@ -61,6 +68,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/phone-verifications/**").authenticated()
                 .requestMatchers("/admin/partners", "/admin/partners/**").hasRole("MASTER")
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "MASTER")
+                // React 관리자 화면과 그 API도 기존 /admin/** 과 같은 권한으로 보호한다.
+                .requestMatchers("/api/admin/**", "/react-admin/**").hasAnyRole("ADMIN", "MASTER")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

@@ -173,35 +173,24 @@ public class ComplaintController {
         return "complaintPasswordLockedUntil:" + complaintNo;
     }
 
+    /**
+     * 민원 작성 화면.
+     *
+     * <p>전환이 끝난 화면이라 기존 Thymeleaf 템플릿(complaint/create) 대신 React
+     * 화면으로 보낸다. 리다이렉트를 쓰는 이유는 주소창까지 SPA 경로로 바꿔야
+     * react-router가 해당 화면을 인식하기 때문이다. forward를 쓰면 브라우저 주소는
+     * /complaints/new 그대로여서 라우터가 경로를 찾지 못한다.</p>
+     *
+     * <p>템플릿과 complaint.js는 아직 지우지 않았다. 되돌려야 할 때
+     * 이 메서드만 원래대로 바꾸면 즉시 복구된다.</p>
+     */
     @GetMapping("/new")
     public String complaintForm(
             Authentication authentication,
-            @RequestParam(name = "category", defaultValue = "COMPLAINT") String category,
-            Model model) {
+            @RequestParam(name = "category", defaultValue = "COMPLAINT") String category) {
         employeeService.getRequiredActiveEmployee(authentication.getName());
-        String selectedCategory = normalizeFormCategory(category);
-        model.addAttribute("selectedCategory", selectedCategory);
-        model.addAttribute("formTitle", switch (selectedCategory) {
-            case "PRAISE" -> "칭찬합니다 글쓰기";
-            case "LOST" -> "분실물 문의 글쓰기";
-            default -> "불편합니다 글쓰기";
-        });
-        model.addAttribute("formDescription", switch (selectedCategory) {
-            case "PRAISE" -> "친절한 기사님과 기분 좋았던 버스 이용 경험을 들려주세요.";
-            case "LOST" -> "버스에서 잃어버린 물건과 이용 정보를 자세히 작성해 주세요.";
-            default -> "버스 이용 중 겪은 불편 사항이나 개선 의견을 자세히 작성해 주세요.";
-        });
-        model.addAttribute("formHeroImage", switch (selectedCategory) {
-            case "PRAISE" -> "/images/subpages/praise-hero.png";
-            case "LOST" -> "/images/subpages/lost-property-hero.png";
-            default -> "/images/subpages/inconvenience-hero.png";
-        });
-        model.addAttribute("titlePlaceholder", switch (selectedCategory) {
-            case "PRAISE" -> "예시) 013-1 노선차량 오전 기사님을 칭찬하고 싶어요";
-            case "LOST" -> "분실물 제목을 입력해 주세요";
-            default -> "예시) 013-1 노선개선일 필요해보여요";
-        });
-        return "complaint/create";
+        return "redirect:/app/complaints/new?category="
+                + normalizeFormCategory(category);
     }
 
     private String normalizeFormCategory(String category) {
