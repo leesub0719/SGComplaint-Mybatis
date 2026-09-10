@@ -6,6 +6,7 @@ import com.transit.SGComplaint.domain.Employee;
 import com.transit.SGComplaint.service.ComplaintService;
 import com.transit.SGComplaint.service.EmployeeService;
 import com.transit.SGComplaint.service.PhoneVerificationException;
+import com.transit.SGComplaint.service.ProfileVerificationSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -28,17 +29,17 @@ import java.time.LocalDate;
 @RequestMapping("/mypage")
 public class MyPageController {
 
-    private static final String PROFILE_VERIFIED_AT = "mypageProfileVerifiedAt";
-    private static final long PROFILE_VERIFICATION_MILLIS = 10 * 60 * 1000L;
-
     private final EmployeeService employeeService;
     private final ComplaintService complaintService;
+    private final ProfileVerificationSession verificationSession;
 
     public MyPageController(
             EmployeeService employeeService,
-            ComplaintService complaintService) {
+            ComplaintService complaintService,
+            ProfileVerificationSession verificationSession) {
         this.employeeService = employeeService;
         this.complaintService = complaintService;
+        this.verificationSession = verificationSession;
     }
 
     @GetMapping
@@ -91,7 +92,7 @@ public class MyPageController {
             return "mypage/password-confirm";
         }
 
-        session.setAttribute(PROFILE_VERIFIED_AT, System.currentTimeMillis());
+        verificationSession.markVerified(session);
         return "redirect:/mypage/profile";
     }
 
@@ -194,16 +195,7 @@ public class MyPageController {
     }
 
     private boolean isProfileVerified(HttpSession session) {
-        Object verifiedAt = session.getAttribute(PROFILE_VERIFIED_AT);
-        if (!(verifiedAt instanceof Long timestamp)) {
-            return false;
-        }
-        if (System.currentTimeMillis() - timestamp
-                > PROFILE_VERIFICATION_MILLIS) {
-            session.removeAttribute(PROFILE_VERIFIED_AT);
-            return false;
-        }
-        return true;
+        return verificationSession.isVerified(session);
     }
 
     private void addCommonModel(
