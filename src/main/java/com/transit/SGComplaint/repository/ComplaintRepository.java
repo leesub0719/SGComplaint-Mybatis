@@ -29,6 +29,13 @@ public interface ComplaintRepository {
     long countByStatus(@Param("status") ComplaintStatus status);
     int insertComplaint(Complaint complaint);
     int updateComplaint(Complaint complaint);
+    int updateMemberContent(@Param("complaintNo") Long complaintNo,
+                            @Param("empNo") Long empNo,
+                            @Param("category") String category,
+                            @Param("title") String title,
+                            @Param("content") String content);
+    int deleteMemberComplaint(@Param("complaintNo") Long complaintNo,
+                              @Param("empNo") Long empNo);
     List<Complaint> selectAdminPage(@Param("status") ComplaintStatus status, @Param("limit") int limit, @Param("offset") long offset);
     long countAdminPage(@Param("status") ComplaintStatus status);
     List<Complaint> selectPublicPage(@Param("category") String category, @Param("keyword") String keyword, @Param("limit") int limit, @Param("offset") long offset);

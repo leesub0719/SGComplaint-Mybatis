@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiGet } from '../../shared/api.js';
+import ComplaintRow from './ComplaintRow.jsx';
 
 const CATEGORIES = [
   ['ALL', '전체'],
@@ -27,7 +28,24 @@ export default function ComplaintList() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [postPassword, setPostPassword] = useState('');
+  const [verifyError, setVerifyError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  
+  const hasSearchCondition  = category !== 'ALL' ||  keyword !== '' || page !== 0;
+  
+  function resetSearch() {
+	setKeywordInput('');
+	
+	setParams({
+		category: 'ALL',
+		keyword: '',
+		page: '0',
+	});
+	}
 
+	
   useEffect(() => { setKeywordInput(keyword); }, [keyword]);
 
   useEffect(() => {
@@ -51,6 +69,41 @@ export default function ComplaintList() {
   }, [category, keyword, page]);
 
   const update = (patch) => setParams({ category, keyword, page: '0', ...patch });
+
+  function openComplaint(item) {
+    setSelected(item);
+    setPostPassword('');
+    setVerifyError('');
+  }
+
+  async function verifyComplaint(event) {
+    event.preventDefault();
+    if (!selected || verifying) return;
+    setVerifying(true);
+    setVerifyError('');
+    try {
+      const csrf = await apiGet('/api/csrf', { redirectOnExpire: false });
+      const response = await fetch(`/complaints/${selected.complaintNo}/verify`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+          [csrf.headerName]: csrf.token,
+        },
+        body: new URLSearchParams({ password: postPassword }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || '비밀번호를 확인하지 못했습니다.');
+      }
+      window.location.assign(result.redirectUrl);
+    } catch (exception) {
+      setVerifyError(exception.message);
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   return (
     <main className="page">
@@ -79,10 +132,16 @@ export default function ComplaintList() {
             <input
               value={keywordInput}
               onChange={(event) => setKeywordInput(event.target.value)}
-              placeholder="제목 검색"
+              placeholder="제목 또는 작성자 검색"
             />
             <button type="submit">검색</button>
-          </form>
+          </form>		
+		  {hasSearchCondition && (
+			<button type="button" className="reset-button" onClick={resetSearch}>초기화
+			</button>			
+		  )}
+		  
+
         </div>
 
         <p className="meta">총 <strong>{data?.totalElements ?? 0}</strong>건</p>
@@ -100,27 +159,10 @@ export default function ComplaintList() {
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((item) => (
-                  <tr key={item.complaintNo}>
-                    <td>{item.complaintNo}</td>
-                    <td>
-                      <span className={`badge category-${item.categoryCode.toLowerCase()}`}>
-                        {item.categoryLabel}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge status-${item.statusCode.toLowerCase()}`}>
-                        {item.statusLabel}
-                      </span>
-                    </td>
-                    <td className="title">
-                      {/* 상세는 비밀글 인증이 필요해 기존 Thymeleaf 화면을 그대로 쓴다. */}
-                      <a href={`/complaints/view/${item.complaintNo}`}>🔒 {item.title}</a>
-                    </td>
-                    <td>{item.maskedWriterName}</td>
-                    <td>{item.registeredDate}</td>
-                  </tr>
-                ))}
+			  	{data.items.map((item) => (
+					<ComplaintRow key={item.complaintNo} item={item} onOpen={openComplaint} />
+				))}
+
                 {data.items.length === 0 && (
                   <tr><td colSpan="6" className="message">검색 결과가 없습니다.</td></tr>
                 )}
@@ -155,6 +197,32 @@ export default function ComplaintList() {
           </Link>
         </div>
       </section>
+      {selected && (
+        <div className="complaint-password-modal" role="presentation">
+          <button type="button" className="complaint-password-backdrop" aria-label="닫기" onClick={() => setSelected(null)} />
+          <section className="complaint-password-dialog" role="dialog" aria-modal="true" aria-labelledby="complaint-password-title">
+            <h2 id="complaint-password-title">게시글 비밀번호 확인</h2>
+            <p>{selected.title}</p>
+            <form onSubmit={verifyComplaint}>
+              <label htmlFor="complaint-post-password">게시글 비밀번호</label>
+              <input
+                id="complaint-post-password"
+                type="password"
+                maxLength={20}
+                autoFocus
+                required
+                value={postPassword}
+                onChange={(event) => setPostPassword(event.target.value)}
+              />
+              {verifyError && <p className="complaint-password-error" role="alert">{verifyError}</p>}
+              <div className="complaint-password-actions">
+                <button type="button" onClick={() => setSelected(null)}>취소</button>
+                <button type="submit" disabled={verifying}>{verifying ? '확인 중...' : '확인'}</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

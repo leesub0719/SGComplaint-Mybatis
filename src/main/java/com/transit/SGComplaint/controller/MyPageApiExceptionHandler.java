@@ -4,6 +4,7 @@ import com.transit.SGComplaint.DTO.MyPageApiResponse;
 import com.transit.SGComplaint.service.PhoneVerificationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * 마이페이지 API 전용 예외 처리.
@@ -56,6 +58,20 @@ public class MyPageApiExceptionHandler {
     public ResponseEntity<MyPageApiResponse> handleIllegalState(
             IllegalStateException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(MyPageApiResponse.fail(exception.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<MyPageApiResponse> handleAccessDenied(
+            AccessDeniedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(MyPageApiResponse.fail(exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<MyPageApiResponse> handleNotFound(
+            NoSuchElementException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(MyPageApiResponse.fail(exception.getMessage()));
     }
 }

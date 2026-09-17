@@ -85,7 +85,12 @@
         </if>
 
     </select>
-  <sql id="publicWhere"><where><if test="category != null and category != ''">complaint_category=#{category}</if><if test="keyword != null and keyword != ''">AND complaint_title LIKE CONCAT(#{keyword},'%')</if></where></sql>
+	<sql id="publicWhere">
+		<where>
+			<if test="category != null and category != ''">complaint_category=#{category}</if>
+			<if test="keyword != null and keyword != ''">AND complaint_title LIKE CONCAT(#{keyword},'%') OR emp_name LIKE CONCAT(#{keyword},'%')</if>
+		</where>
+	</sql>
 
     <select id="selectPublicPage" resultMap="complaint">
         SELECT
@@ -138,6 +143,24 @@
             updated_at=CURRENT_TIMESTAMP
         WHERE complaint_no=#{complaintNo}
     </update>
+
+    <update id="updateMemberContent">
+        UPDATE sgtransit_complaint
+        SET complaint_category=#{category},
+            complaint_title=#{title},
+            complaint_content=#{content},
+            updated_at=CURRENT_TIMESTAMP
+        WHERE complaint_no=#{complaintNo}
+          AND emp_no=#{empNo}
+          AND complaint_status='CHECKING'
+    </update>
+
+    <delete id="deleteMemberComplaint">
+        DELETE FROM sgtransit_complaint
+        WHERE complaint_no=#{complaintNo}
+          AND emp_no=#{empNo}
+          AND complaint_status='CHECKING'
+    </delete>
 
     <update id="anonymizeExpiredCompleted">
         UPDATE sgtransit_complaint

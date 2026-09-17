@@ -5,6 +5,8 @@ import java.util.List;
 public class ComplaintListItem {
 
     private final Long complaintNo;
+    private final String categoryCode;
+    private final String categoryLabel;
     private final String title;
     private final String content;
     private final String statusCode;
@@ -14,9 +16,12 @@ public class ComplaintListItem {
     private final String registeredDateTime;
     private final String answerContent;
     private final List<ComplaintFileItem> answerAttachments;
+    private final boolean editable;
 
     public ComplaintListItem(
             Long complaintNo,
+            String categoryCode,
+            String categoryLabel,
             String title,
             String content,
             String statusCode,
@@ -25,8 +30,11 @@ public class ComplaintListItem {
             String registeredDate,
             String registeredDateTime,
             String answerContent,
-            List<ComplaintFileItem> answerAttachments) {
+            List<ComplaintFileItem> answerAttachments,
+            boolean editable) {
         this.complaintNo = complaintNo;
+        this.categoryCode = categoryCode;
+        this.categoryLabel = categoryLabel;
         this.title = title;
         this.content = content;
         this.statusCode = statusCode;
@@ -36,9 +44,12 @@ public class ComplaintListItem {
         this.registeredDateTime = registeredDateTime;
         this.answerContent = answerContent;
         this.answerAttachments = List.copyOf(answerAttachments);
+        this.editable = editable;
     }
 
     public Long getComplaintNo() { return complaintNo; }
+    public String getCategoryCode() { return categoryCode; }
+    public String getCategoryLabel() { return categoryLabel; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
     public String getStatusCode() { return statusCode; }
@@ -48,4 +59,5 @@ public class ComplaintListItem {
     public String getRegisteredDateTime() { return registeredDateTime; }
     public String getAnswerContent() { return answerContent; }
     public List<ComplaintFileItem> getAnswerAttachments() { return answerAttachments; }
+    public boolean isEditable() { return editable; }
 }

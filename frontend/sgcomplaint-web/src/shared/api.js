@@ -89,6 +89,30 @@ export async function apiPost(url, body, { redirectOnExpire = true } = {}) {
   return parse(response);
 }
 
+async function apiWrite(method, url, body, { redirectOnExpire = true } = {}) {
+  const csrf = await loadCsrf();
+  const response = await fetch(url, {
+    method,
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      [csrf.headerName]: csrf.token,
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  checkAccess(response, redirectOnExpire);
+  return parse(response);
+}
+
+export function apiPut(url, body, options) {
+  return apiWrite('PUT', url, body, options);
+}
+
+export function apiDelete(url, options) {
+  return apiWrite('DELETE', url, undefined, options);
+}
+
 /**
  * 첨부파일이 있는 요청(민원 등록, 관리자 답변)은 multipart/form-data로 보낸다.
  * Content-Type은 브라우저가 boundary와 함께 붙이므로 직접 지정하지 않는다.

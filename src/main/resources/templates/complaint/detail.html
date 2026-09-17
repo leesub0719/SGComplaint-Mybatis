@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../../static/css/complaint-detail.css" th:href="@{/css/complaint-detail.css}">
     <link rel="stylesheet" href="../../static/css/public-layout.css" th:href="@{/css/public-layout.css}">
     <script src="../../static/js/public-layout.js" th:src="@{/js/public-layout.js}" defer></script>
+    <script src="../../static/js/complaint-detail.js" th:src="@{/js/complaint-detail.js}" defer></script>
 </head>
 <body>
 <header th:replace="~{fragments/public-layout :: header}"></header>
@@ -66,6 +67,30 @@
                 <small th:text="${file.formattedSize}">1 MB</small>
             </a>
         </section>
+        <div class="detail-owner" th:if="${canEdit}" th:attr="data-complaint-no=${complaint.complaintNo}">
+            <div class="detail-owner-buttons">
+                <button id="detail-edit-open" type="button">수정</button>
+                <button id="detail-delete" type="button" class="danger">삭제</button>
+            </div>
+            <form id="detail-edit-form" class="detail-edit-form" hidden>
+                <label for="detail-edit-category">분류</label>
+                <select id="detail-edit-category" required>
+                    <option value="PRAISE" th:selected="${complaint.categoryCode == 'PRAISE'}">칭찬합니다</option>
+                    <option value="COMPLAINT" th:selected="${complaint.categoryCode == 'COMPLAINT'}">불편합니다</option>
+                    <option value="LOST" th:selected="${complaint.categoryCode == 'LOST'}">분실물 문의</option>
+                </select>
+                <label for="detail-edit-title">제목</label>
+                <input id="detail-edit-title" th:value="${complaint.title}" maxlength="100" required>
+                <label for="detail-edit-content">내용</label>
+                <div id="detail-edit-content" class="detail-edit-content" contenteditable="true"
+                     role="textbox" aria-multiline="true" th:utext="${complaint.content}"></div>
+                <div class="detail-edit-buttons">
+                    <button id="detail-edit-cancel" type="button">취소</button>
+                    <button id="detail-edit-save" type="submit">수정 완료</button>
+                </div>
+            </form>
+            <p id="detail-action-message" class="detail-action-message" role="alert" hidden></p>
+        </div>
         <div class="detail-actions"><a href="/complaints" th:href="@{/complaints}">목록으로 돌아가기</a></div>
     </article>
 </main>

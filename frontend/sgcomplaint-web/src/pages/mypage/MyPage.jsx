@@ -34,8 +34,7 @@ export default function MyPage() {
       <aside className="side-menu">
         <strong>마이페이지</strong>
         <Link className="active" to="/mypage">정보수정</Link>
-        {/* 문의내역은 아직 전환하지 않아 기존 화면으로 보낸다. */}
-        <a href="/mypage/inquiries">나의 문의내역</a>
+        <Link to="/mypage/inquiries">나의 문의내역</Link>
       </aside>
 
       <div className="mypage-content">

@@ -160,7 +160,7 @@ export default function PublicLayout() {
                   </button>
                   <div className="public-sub-menu public-member-sub-menu">
                     <Link to="/mypage">정보수정</Link>
-                    <a href="/mypage/inquiries">문의내역</a>
+                    <Link to="/mypage/inquiries">문의내역</Link>
                   </div>
                 </div>
 

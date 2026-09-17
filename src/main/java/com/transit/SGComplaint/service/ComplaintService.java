@@ -3,6 +3,7 @@ package com.transit.SGComplaint.service;
 import com.transit.SGComplaint.DTO.ComplaintCreateRequest;
 import com.transit.SGComplaint.DTO.ComplaintFileItem;
 import com.transit.SGComplaint.DTO.ComplaintListItem;
+import com.transit.SGComplaint.DTO.ComplaintUpdateRequest;
 import com.transit.SGComplaint.DTO.PublicComplaintDetail;
 import com.transit.SGComplaint.DTO.PublicComplaintItem;
 import com.transit.SGComplaint.DTO.StoredAttachment;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -181,6 +184,7 @@ public class ComplaintService {
                 .toList();
         return new PublicComplaintDetail(
                 complaintNo,
+                publicCategoryCode(complaint.getCategory()),
                 categoryLabel(complaint.getCategory()),
                 complaint.getStatus().name(),
                 complaint.getStatus().getLabel(),
@@ -194,6 +198,15 @@ public class ComplaintService {
                 answerFiles,
                 files
         );
+    }
+
+    public boolean canEditPublicComplaint(String loginId, Long complaintNo) {
+        if (!StringUtils.hasText(loginId)) return false;
+        return employeeRepository.findByEmpIdAndEmpStatus(loginId, "Y")
+                .flatMap(employee -> complaintRepository.findById(complaintNo)
+                        .map(complaint -> employee.getEmpNo().equals(complaint.getEmpNo())
+                                && complaint.getStatus() == com.transit.SGComplaint.domain.ComplaintStatus.CHECKING))
+                .orElse(false);
     }
 
     public StoredAttachment getPublicComplaintAnswerAttachment(
@@ -252,6 +265,15 @@ public class ComplaintService {
             case "COMPLAINT", "DRIVER", "BUS" -> "불편합니다";
             case "LOST", "GENERAL" -> "분실물 문의";
             default -> "기타";
+        };
+    }
+
+    private String publicCategoryCode(String category) {
+        return switch (category) {
+            case "PRAISE" -> "PRAISE";
+            case "COMPLAINT", "DRIVER", "BUS" -> "COMPLAINT";
+            case "LOST", "GENERAL" -> "LOST";
+            default -> "COMPLAINT";
         };
     }
 
@@ -329,6 +351,70 @@ public class ComplaintService {
                 items, complaintPage.getPageable(), complaintPage.getTotalElements());
     }
 
+    @Transactional
+    public void updateMemberComplaint(
+            Long empNo,
+            Long complaintNo,
+            ComplaintUpdateRequest request) {
+        Complaint complaint = getOwnedEditableComplaint(empNo, complaintNo);
+        String sanitizedContent = richTextSanitizer.sanitize(request.getContent());
+        complaint.updateContent(
+                request.getCategory(),
+                request.getTitle(),
+                sanitizedContent);
+
+        int updated = complaintRepository.updateMemberContent(
+                complaintNo,
+                empNo,
+                complaint.getCategory(),
+                complaint.getTitle(),
+                complaint.getContent());
+        if (updated != 1) {
+            throw new IllegalStateException("민원 상태가 변경되어 수정할 수 없습니다.");
+        }
+    }
+
+    @Transactional
+    public void deleteMemberComplaint(Long empNo, Long complaintNo) {
+        getOwnedEditableComplaint(empNo, complaintNo);
+        List<ComplaintAttachment> attachments = attachmentRepository
+                .findByComplaintNoInOrderByAttachmentNoAsc(List.of(complaintNo));
+
+        int deleted = complaintRepository.deleteMemberComplaint(complaintNo, empNo);
+        if (deleted != 1) {
+            throw new IllegalStateException("민원 상태가 변경되어 삭제할 수 없습니다.");
+        }
+
+        for (ComplaintAttachment attachment : attachments) {
+            Path file = storageRoot.resolve(attachment.getFilePath()).normalize();
+            ensureInsideStorage(file);
+            try {
+                Files.deleteIfExists(file);
+            } catch (IOException ignored) {
+                // DB 삭제는 완료한다. 남은 파일은 운영 정리 작업에서 제거할 수 있다.
+            }
+        }
+        Path directory = storageRoot.resolve(String.valueOf(complaintNo)).normalize();
+        ensureInsideStorage(directory);
+        try {
+            Files.deleteIfExists(directory);
+        } catch (IOException ignored) {
+            // 파일이 남아 있거나 이미 제거된 경우 DB 삭제 결과를 유지한다.
+        }
+    }
+
+    private Complaint getOwnedEditableComplaint(Long empNo, Long complaintNo) {
+        Complaint complaint = complaintRepository.findById(complaintNo)
+                .orElseThrow(() -> new NoSuchElementException("민원 정보를 찾을 수 없습니다."));
+        if (!empNo.equals(complaint.getEmpNo())) {
+            throw new AccessDeniedException("본인이 작성한 민원만 변경할 수 있습니다.");
+        }
+        if (complaint.getStatus() != com.transit.SGComplaint.domain.ComplaintStatus.CHECKING) {
+            throw new IllegalStateException("관리자가 확인한 민원은 수정하거나 삭제할 수 없습니다.");
+        }
+        return complaint;
+    }
+
     public StoredAttachment getMemberAnswerAttachment(
             String loginId,
             Long attachmentNo) {
@@ -380,6 +466,8 @@ public class ComplaintService {
 
         return new ComplaintListItem(
                 complaint.getComplaintNo(),
+                complaint.getCategory(),
+                categoryLabel(complaint.getCategory()),
                 complaint.getTitle(),
                 complaint.getContent(),
                 complaint.getStatus().name(),
@@ -388,7 +476,8 @@ public class ComplaintService {
                 complaint.getCreatedAt().format(DATE_FORMATTER),
                 complaint.getCreatedAt().format(DATE_TIME_FORMATTER),
                 answerContent,
-                answerAttachments
+                answerAttachments,
+                complaint.getStatus() == com.transit.SGComplaint.domain.ComplaintStatus.CHECKING
         );
     }
 

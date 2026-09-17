@@ -1,8 +1,8 @@
 package com.transit.SGComplaint.domain;
 
-
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+
 public class Complaint {
     private Long complaintNo;
     private Long empNo;
@@ -39,11 +39,13 @@ public class Complaint {
         complaint.status = ComplaintStatus.CHECKING;
         return complaint;
     }
+
     private void onCreate() {
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         createdAt = now;
         updatedAt = now;
     }
+
     private void onUpdate() {
         updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
     }
@@ -65,5 +67,18 @@ public class Complaint {
             throw new IllegalArgumentException("민원 처리상태는 필수입니다.");
         }
         this.status = status;
+    }
+
+    public void updateContent(
+            String category,
+            String title,
+            String content) {
+        if (status != ComplaintStatus.CHECKING) {
+            throw new IllegalStateException(
+                    "관리자가 확인한 민원은 수정할 수 없습니다.");
+        }
+        this.category = category;
+        this.title = title.trim();
+        this.content = content;
     }
 }

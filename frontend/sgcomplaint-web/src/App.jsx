@@ -5,6 +5,7 @@ import AdminLayout from './shared/AdminLayout.jsx';
 import ComplaintList from './pages/complaints/List.jsx';
 import ComplaintNew from './pages/complaints/New.jsx';
 import MyPage from './pages/mypage/MyPage.jsx';
+import MyInquiries from './pages/mypage/MyInquiries.jsx';
 import Account from './pages/account/Account.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
 import AdminComplaints from './pages/admin/Complaints.jsx';
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/complaints" element={<ComplaintList />} />
           <Route path="/complaints/new" element={<ComplaintNew />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/inquiries" element={<MyInquiries />} />
           {/* 회원가입·아이디찾기·비밀번호재설정은 한 컴포넌트가 탭으로 처리한다. */}
           <Route path="/account/:tab" element={<Account />} />
           <Route path="/account" element={<Navigate to="/account/signup" replace />} />

@@ -158,6 +158,24 @@ button, input, select, textarea { font: inherit; }
 .complete-modal-dialog p { margin: 0 0 8px; color: #63706d; }
 .receipt-number strong { color: #08745f; font-size: 20px; }
 .complete-confirm { width: 100%; padding: 13px; margin-top: 20px; color: white; background: #08745f; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+.search-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reset-button {
+  padding: 10px 14px;
+  border: 1px solid #08745f;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #08745f;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background-color: #eaf6f3;
+}
 
 @media (max-width: 680px) {
 }
@@ -335,6 +353,20 @@ td select:disabled { color: #9aa8a4; background: #f4f7f6; }
 .write { padding: 11px 20px; color: white; background: #08745f; border-radius: 10px; text-decoration: none; font-weight: 700; }
 .title a { color: inherit; text-decoration: none; }
 .title a:hover { text-decoration: underline; }
+.complaint-title-button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.complaint-title-button:hover { text-decoration: underline; }
+.complaint-password-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; }
+.complaint-password-backdrop { position: absolute; inset: 0; border: 0; background: rgba(12,38,32,.55); cursor: pointer; }
+.complaint-password-dialog { position: relative; width: min(420px,100%); padding: 28px; border-radius: 16px; background: #fff; box-shadow: 0 18px 48px rgba(0,0,0,.18); }
+.complaint-password-dialog h2 { margin: 0 0 12px; font-size: 20px; }
+.complaint-password-dialog p { overflow-wrap: anywhere; }
+.complaint-password-dialog label { display: block; margin: 18px 0 7px; font-weight: 700; }
+.complaint-password-dialog input { width: 100%; padding: 11px; border: 1px solid #ccd9d5; border-radius: 8px; }
+.complaint-password-error { color: #a83024; }
+.complaint-password-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.complaint-password-actions button { padding: 10px 18px; border: 1px solid #08745f; border-radius: 8px; background: #fff; color: #08745f; cursor: pointer; }
+.complaint-password-actions button[type="submit"] { background: #08745f; color: #fff; }
+.complaint-password-actions button:disabled { opacity: .5; cursor: wait; }
 .category-complaint { background: #fff0ee; color: #c54b3f; }
 .category-lost { background: #fff7d7; color: #8a6a00; }
 
@@ -353,3 +385,45 @@ td select:disabled { color: #9aa8a4; background: #f4f7f6; }
 .page-heading { margin-bottom: 22px; }
 .page-heading h1 { margin: 0 0 8px; font-size: 27px; }
 .page-heading span { color: #63706d; }
+
+/* ===== 마이페이지 문의내역 수정·삭제 ===== */
+.inquiry-panel { min-width: 0; }
+.inquiry-search-form { display: grid; grid-template-columns: auto 1fr auto 1fr auto; align-items: center; gap: 10px; padding: 18px; background: #f4f7f6; border-radius: 12px; }
+.inquiry-search-form label { font-weight: 700; }
+.inquiry-search-form input { min-width: 0; padding: 11px 12px; border: 1px solid #ccd9d5; border-radius: 9px; }
+.inquiry-search-form button, .inquiry-new-link { padding: 11px 18px; color: white; background: #08745f; border: 1px solid #08745f; border-radius: 9px; text-decoration: none; font-weight: 700; cursor: pointer; }
+.inquiry-summary-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 24px 0 12px; color: #63706d; }
+.inquiry-summary-row strong { color: #1c2724; }
+.my-inquiry-item { border-top: 1px solid #e5ece9; }
+.my-inquiry-item:last-of-type { border-bottom: 1px solid #e5ece9; }
+.my-inquiry-summary { width: 100%; display: grid; grid-template-columns: 72px minmax(0, 1fr) 100px 105px; align-items: center; gap: 14px; padding: 18px 12px; text-align: left; color: #1c2724; background: white; border: 0; cursor: pointer; }
+.my-inquiry-summary:hover { background: #fafcfb; }
+.my-inquiry-summary > span, .my-inquiry-summary time { color: #78857f; font-size: 14px; }
+.my-inquiry-summary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-inquiry-summary em { justify-self: center; font-style: normal; }
+.my-inquiry-detail { display: grid; gap: 14px; padding: 22px; background: #f7faf8; border-top: 1px solid #e5ece9; }
+.my-inquiry-detail section { padding: 20px; background: white; border: 1px solid #e5ece9; border-radius: 12px; }
+.my-inquiry-detail h2 { margin: 0 0 12px; font-size: 17px; }
+.my-inquiry-detail p { margin: 0; line-height: 1.7; }
+.inquiry-answer-box { border-left: 4px solid #f4bd00 !important; }
+.inquiry-answer-box a { display: block; margin-top: 9px; color: #08745f; }
+.inquiry-edit-form { display: grid; gap: 18px; padding: 20px; background: white; border-radius: 12px; }
+.inquiry-edit-form label, .inquiry-edit-field { display: grid; gap: 8px; font-weight: 700; }
+.inquiry-edit-form input, .inquiry-edit-form select { width: 100%; padding: 11px 13px; border: 1px solid #ccd9d5; border-radius: 10px; }
+.inquiry-edit-field .editor-shell { font-weight: 400; }
+.inquiry-edit-field .editor-body { min-height: 180px; }
+.inquiry-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.inquiry-actions button { padding: 10px 20px; border-radius: 9px; font-weight: 700; cursor: pointer; }
+.inquiry-actions .primary { color: white; background: #08745f; border: 1px solid #08745f; }
+.inquiry-actions .secondary { color: #46534f; background: white; border: 1px solid #ccd9d5; }
+.inquiry-actions .danger { color: #b2372c; background: white; border: 1px solid #e5c4c0; }
+.inquiry-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.inquiry-locked-message { color: #78857f; font-size: 13px; text-align: right; }
+
+@media (max-width: 760px) {
+  .inquiry-search-form { grid-template-columns: 1fr 1fr; }
+  .inquiry-search-form label, .inquiry-search-form button { grid-column: 1 / -1; }
+  .inquiry-search-form > span { display: none; }
+  .my-inquiry-summary { grid-template-columns: 58px minmax(0, 1fr) 90px; }
+  .my-inquiry-summary time { display: none; }
+}

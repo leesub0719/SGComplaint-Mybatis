@@ -17,7 +17,7 @@ const PLACEHOLDER = '발생 일시, 버스 노선, 차량번호, 정류장, 상�
  * @param {(html: string, textLength: number) => void} onChange
  *        서버로 보낼 HTML과 글자수 제한 검사용 순수 텍스트 길이를 함께 올려준다.
  */
-export default function RichTextEditor({ onChange, invalid }) {
+export default function RichTextEditor({ onChange, invalid, initialContent = '' }) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -26,7 +26,7 @@ export default function RichTextEditor({ onChange, invalid }) {
       FontFamily.configure({ types: ['textStyle'] }),
       FontSize,
     ],
-    content: '',
+    content: initialContent,
     onUpdate: ({ editor: instance }) => {
       onChange(instance.getHTML(), instance.getText().trim().length);
     },

@@ -49,4 +49,17 @@ a { color:inherit; text-decoration:none; }
 .detail-actions { margin-top:32px; text-align:center; }
 .detail-actions a { height:47px; display:inline-flex; align-items:center; padding:0 22px; color:#fff; background:var(--green); border-radius:8px; font-size:13px; font-weight:800; }
 .detail-actions a:hover { background:var(--green-dark); }
+.detail-owner { margin-top:32px; padding-top:22px; border-top:1px solid var(--border); }
+.detail-owner-buttons,.detail-edit-buttons { display:flex; justify-content:flex-end; gap:10px; }
+.detail-owner button { padding:11px 20px; border:1px solid var(--green); border-radius:8px; background:var(--green); color:#fff; font:inherit; font-size:13px; font-weight:750; cursor:pointer; }
+.detail-owner button.danger { border-color:#b7483c; background:#fff; color:#b7483c; }
+.detail-owner button:disabled { opacity:.55; cursor:wait; }
+.detail-edit-form { display:grid; gap:10px; margin-top:20px; }
+.detail-edit-form[hidden],.detail-action-message[hidden] { display:none; }
+.detail-edit-form label { font-size:13px; font-weight:750; }
+.detail-edit-form input,.detail-edit-form select,.detail-edit-content { width:100%; padding:12px; border:1px solid #ccd9d5; border-radius:8px; font:inherit; font-size:14px; }
+.detail-edit-content { min-height:200px; line-height:1.7; overflow-wrap:anywhere; }
+.detail-edit-buttons { margin-top:10px; }
+.detail-edit-buttons button:first-child { color:var(--green); background:#fff; }
+.detail-action-message { margin:14px 0 0; padding:12px; color:#a83024; background:#fff0ee; border-radius:8px; font-size:13px; }
 @media (max-width:640px) { .site-header{height:68px}.header-inner,.detail-page{width:calc(100% - 28px)}.brand{font-size:17px}.detail-page{padding:32px 0 55px}.detail-card{padding:28px 20px}.detail-card h1{font-size:23px}.detail-meta{grid-template-columns:1fr 1fr}.detail-meta div:last-child{grid-column:1/-1}.rich-content{min-height:160px}.detail-answer{padding:21px 18px}.answer-heading{align-items:flex-start;flex-direction:column;gap:8px}.detail-files a,.answer-files a{grid-template-columns:30px minmax(0,1fr)}.detail-files a small,.answer-files a small{display:none} }

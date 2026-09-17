@@ -4,7 +4,10 @@ import com.transit.SGComplaint.DTO.MemberPasswordConfirmRequest;
 import com.transit.SGComplaint.DTO.MemberProfileUpdateRequest;
 import com.transit.SGComplaint.DTO.MyPageApiResponse;
 import com.transit.SGComplaint.DTO.MyPageProfileResponse;
+import com.transit.SGComplaint.DTO.ComplaintListItem;
+import com.transit.SGComplaint.DTO.ComplaintUpdateRequest;
 import com.transit.SGComplaint.domain.Employee;
+import com.transit.SGComplaint.service.ComplaintService;
 import com.transit.SGComplaint.service.EmployeeService;
 import com.transit.SGComplaint.service.ProfileVerificationSession;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,13 +15,21 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
 
 /**
  * 마이페이지 정보수정 화면의 JSON API.
@@ -31,14 +42,63 @@ import org.springframework.web.bind.annotation.RestController;
 public class MyPageApiController {
 
     private final EmployeeService employeeService;
+    private final ComplaintService complaintService;
     private final ProfileVerificationSession verificationSession;
 
     public MyPageApiController(
             EmployeeService employeeService,
+            ComplaintService complaintService,
             ProfileVerificationSession verificationSession) {
         this.employeeService = employeeService;
+        this.complaintService = complaintService;
         this.verificationSession = verificationSession;
     }
+
+    @GetMapping("/inquiries")
+    public Page<ComplaintListItem> inquiries(
+            Authentication authentication,
+            @RequestParam(name = "startDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(name = "page", defaultValue = "0") int page) {
+        Employee employee = employeeService.getRequiredActiveEmployee(authentication.getName());
+        DateRange range = normalizeRange(startDate, endDate);
+        return complaintService.getMemberComplaints(
+                employee.getEmpNo(), range.start(), range.end(), page);
+    }
+
+    @PutMapping("/inquiries/{complaintNo}")
+    public MyPageApiResponse updateInquiry(
+            Authentication authentication,
+            @PathVariable("complaintNo") Long complaintNo,
+            @Valid @RequestBody ComplaintUpdateRequest request) {
+        Employee employee = employeeService.getRequiredActiveEmployee(authentication.getName());
+        complaintService.updateMemberComplaint(employee.getEmpNo(), complaintNo, request);
+        return MyPageApiResponse.ok("문의가 수정되었습니다.");
+    }
+
+    @DeleteMapping("/inquiries/{complaintNo}")
+    public MyPageApiResponse deleteInquiry(
+            Authentication authentication,
+            @PathVariable("complaintNo") Long complaintNo) {
+        Employee employee = employeeService.getRequiredActiveEmployee(authentication.getName());
+        complaintService.deleteMemberComplaint(employee.getEmpNo(), complaintNo);
+        return MyPageApiResponse.ok("문의가 삭제되었습니다.");
+    }
+
+    private DateRange normalizeRange(LocalDate startDate, LocalDate endDate) {
+        LocalDate normalizedEnd = endDate == null ? LocalDate.now() : endDate;
+        LocalDate normalizedStart = startDate == null
+                ? normalizedEnd.minusYears(1)
+                : startDate;
+        if (normalizedStart.isAfter(normalizedEnd)) {
+            return new DateRange(normalizedEnd, normalizedStart);
+        }
+        return new DateRange(normalizedStart, normalizedEnd);
+    }
+
+    private record DateRange(LocalDate start, LocalDate end) { }
 
     /** 초기 로딩: 재확인 통과 여부 + (통과했다면) 수정 폼 초기값. */
     @GetMapping("/profile")

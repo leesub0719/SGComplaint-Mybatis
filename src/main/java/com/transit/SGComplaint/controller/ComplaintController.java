@@ -115,10 +115,13 @@ public class ComplaintController {
     @GetMapping("/view/{complaintNo}")
     public String complaintDetail(
             @PathVariable(name = "complaintNo") Long complaintNo,
+            Authentication authentication,
             HttpSession session,
             Model model) {
         requireVerified(session, complaintNo);
         model.addAttribute("complaint", complaintService.getPublicComplaint(complaintNo));
+        model.addAttribute("canEdit", authentication != null
+                && complaintService.canEditPublicComplaint(authentication.getName(), complaintNo));
         return "complaint/detail";
     }
 
